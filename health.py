@@ -1,25 +1,28 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu May 25 22:38:19 2023
-
-@author: DELL
-"""
 import seaborn as sns
 import pickle
 import streamlit as st
 import pandas as pd
 from streamlit_option_menu import option_menu
 import matplotlib.pyplot as plt
+from typing import Optional
 
 
-# loading the saved models
+"""Model loading helpers"""
+
+def load_pickle_model(path: str) -> Optional[object]:
+	try:
+		with open(path, 'rb') as model_file:
+			return pickle.load(model_file)
+	except Exception as exc:
+		st.sidebar.warning(f"Could not load model '{path}': {exc}")
+		return None
 
 
-diabetes_model = pickle.load(open("D:\saved models-20230525T165545Z-001\saved models\diabetes_model.sav", 'rb'))
+# loading the saved models (best-effort; some pickles may require older scikit-learn)
+diabetes_model = load_pickle_model(r"saved models\diabetes_model.sav")
+heart_disease_model = load_pickle_model(r"saved models\heart_disease_model.sav")
+parkinsons_model = load_pickle_model(r"saved models\parkinsons_model.sav")
 
-heart_disease_model = pickle.load(open("D:\saved models-20230525T165545Z-001\saved models\heart_disease_model.sav",'rb'))
-
-parkinsons_model = pickle.load(open("D:\saved models-20230525T165545Z-001\saved models\parkinsons_model.sav", 'rb'))
 
 
 
@@ -29,15 +32,17 @@ parkinsons_model = pickle.load(open("D:\saved models-20230525T165545Z-001\saved 
 
 # sidebar for navigation
 with st.sidebar:
-    
-    selected = option_menu('Multiple Disease Prediction System',
-                          
-                          ['Diabetes Prediction',
-                           'Heart Disease Prediction',
-                           'Parkinsons Prediction',
-                           'Analytics'],
-                          icons=['activity','heart','person'],
-                          default_index=0)
+
+	available_pages = ['Diabetes Prediction', 'Heart Disease Prediction', 'Analytics']
+	if parkinsons_model is not None:
+		available_pages.insert(2, 'Parkinsons Prediction')
+
+	selected = option_menu(
+		'Multiple Disease Prediction System',
+		available_pages,
+		icons=['activity','heart','person'],
+		default_index=0
+	)
     
     
 # Diabetes Prediction Page
@@ -80,7 +85,7 @@ if (selected == 'Diabetes Prediction'):
     
     # creating a button for Prediction
     
-    if st.button('Diabetes Test Result'):
+    if st.button('Diabetes Test Result') and diabetes_model is not None:
         diab_prediction = diabetes_model.predict([[Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin, BMI, DiabetesPedigreeFunction, Age]])
         
         if (diab_prediction[0] == 1):
@@ -148,7 +153,7 @@ if (selected == 'Heart Disease Prediction'):
     
     # creating a button for Prediction
     
-    if st.button('Heart Disease Test Result'):
+    if st.button('Heart Disease Test Result') and heart_disease_model is not None:
         heart_prediction = heart_disease_model.predict([[age, sex, cp, trestbps, chol, fbs, restecg,thalach,exang,oldpeak,slope,ca,thal]])                          
         
         if (heart_prediction[0] == 1):
@@ -162,7 +167,7 @@ if (selected == 'Heart Disease Prediction'):
     
 
 # Parkinson's Prediction Page
-if (selected == "Parkinsons Prediction"):
+if (selected == "Parkinsons Prediction") and parkinsons_model is not None:
     
     # page title
     st.title("Parkinson's Disease Prediction using ML")
